@@ -1,10 +1,42 @@
 import { Hono } from "hono";
+import { replacePokemonUrlParams } from "../lib/url";
+
+import { fetchPokemon } from "../lib/fetch";
 
 const app = new Hono();
 
-app.get("/", (c) => {
+app.get("/", async (c) => {
+  const q = c.req.query();
+  const selectionQuery = replacePokemonUrlParams(q);
+
+  // データを取得
+  const getPokemonData = selectionQuery.id
+    ? await fetchPokemon({ id: selectionQuery.id }).catch((error) => {
+        console.error("Error fetching Pokemon data:", error);
+        return null; // エラー時には null を返す
+      })
+    : null;
+
+  // データが null の場合は 400 を返す
+  if (!getPokemonData) {
+    return new Response(
+      JSON.stringify({
+        message: "Invalid request: Pokemon data not found",
+        id: selectionQuery.id,
+      }),
+      {
+        headers: { "Content-Type": "application/json" },
+        status: 400,
+      }
+    );
+  }
+
   return new Response(
-    JSON.stringify({ message: "Hello, Hono!", res: c.req.query() }),
+    JSON.stringify({
+      message: "success",
+      id: selectionQuery.id,
+      pokemonData: getPokemonData,
+    }),
     {
       headers: { "Content-Type": "application/json" },
       status: 200,
