@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { replacePokemonUrlParams } from "../lib/url";
 
 import { fetchPokemon } from "../lib/fetch";
+import { ERROR_MESSAGE } from "../constants/errorMessage";
 
 const app = new Hono();
 
@@ -21,7 +22,7 @@ app.get("/", async (c) => {
   if (!getPokemonData) {
     return new Response(
       JSON.stringify({
-        message: "Invalid request: Pokemon data not found",
+        message: ERROR_MESSAGE.NOT_FOUND,
         id: selectionQuery.id,
       }),
       {
@@ -33,7 +34,7 @@ app.get("/", async (c) => {
 
   return new Response(
     JSON.stringify({
-      message: "success",
+      message: ERROR_MESSAGE.SUCCESS,
       id: selectionQuery.id,
       pokemonData: getPokemonData,
     }),
