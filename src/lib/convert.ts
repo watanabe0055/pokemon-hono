@@ -1,15 +1,20 @@
 import { PokemonDataType, SpritesType } from "../type/convertPokemon";
+import { SpeciesListType } from "../type/pokemonSpecoes";
 
 /**
  * 数が多いので必要なデータだけを選択して返す
  * @param 取得しただけのデータ
  * @returns　特定の要素だけのデータ
  */
-export const convertPokemonData = (data: PokemonDataType) => {
+export const convertPokemonData = (
+  data: PokemonDataType,
+  names: SpeciesListType
+) => {
   const convertedData = convertKeys(data);
 
   return {
     id: data.id,
+    names: names,
     sprites: convertedData.sprites,
     stats: data.stats,
     types: data.types,
