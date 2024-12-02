@@ -8,20 +8,18 @@ interface OfficialArtwork {
 }
 
 // 定義: other の型
-interface SpritesType {
+export interface SpritesType {
   dream_world: Record<string, unknown>;
   home: Record<string, unknown>;
-  officialArtwork: OfficialArtwork;
-  showdown: {
-    back_default: Sprite;
-    back_female: Sprite;
-    back_shiny: Sprite;
-    back_shiny_female: Sprite;
-    front_default: Sprite;
-    front_female: Sprite;
-    front_shiny: Sprite;
-    front_shiny_female: Sprite;
-  };
+  other: { official_artwork: OfficialArtwork };
+  back_default: Sprite;
+  back_female: Sprite;
+  back_shiny: Sprite;
+  back_shiny_female: Sprite;
+  front_default: Sprite;
+  front_female: Sprite;
+  front_shiny: Sprite;
+  front_shiny_female: Sprite;
 }
 
 // 定義: 各statの詳細型
@@ -78,4 +76,13 @@ export type ConvertPokemonDataType = {
   sprites: SpritesType;
   stats: StatsType;
   types: Types;
+};
+
+type ResponseMessage = string;
+type RequestId = string;
+
+export type GetPokemonDataType = {
+  id: RequestId;
+  message: ResponseMessage;
+  pokemonData: ConvertPokemonDataType;
 };

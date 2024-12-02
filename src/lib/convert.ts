@@ -1,4 +1,4 @@
-import { PokemonDataType } from "../type/convertPokemon";
+import { PokemonDataType, SpritesType } from "../type/convertPokemon";
 
 /**
  * 数が多いので必要なデータだけを選択して返す
@@ -6,11 +6,38 @@ import { PokemonDataType } from "../type/convertPokemon";
  * @returns　特定の要素だけのデータ
  */
 export const convertPokemonData = (data: PokemonDataType) => {
-  console.log(data.stats);
+  const convertedData = convertKeys(data);
+
   return {
     id: data.id,
-    sprites: data.sprites,
+    sprites: convertedData.sprites,
     stats: data.stats,
     types: data.types,
   };
 };
+
+type TransformKey<T> = {
+  [K in keyof T as K extends string
+    ? K extends `${infer Start}-${infer End}`
+      ? `${Start}_${End}`
+      : K
+    : K]: T[K] extends Record<string, unknown> ? TransformKey<T[K]> : T[K];
+};
+
+/**
+ * 一部スネークケースになってなかったので、スネークケースに変換
+ */
+function convertKeys<T extends Record<string, unknown>>(
+  data: T
+): TransformKey<T> {
+  const result: any = {};
+
+  for (const key in data) {
+    const newKey = key.replace(/-/g, "_"); // ハイフンをアンダースコアに変換
+    const value = data[key];
+    result[newKey] =
+      value && typeof value === "object" ? convertKeys(value) : value;
+  }
+
+  return result;
+}
