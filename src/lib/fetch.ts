@@ -8,23 +8,37 @@ type fetchPokemonType = {
   id: pokemonID;
 };
 
+/**
+ * id指定したポケモンだけを返す
+ * @param param0
+ * @returns
+ */
 export const fetchPokemon = async ({ id }: fetchPokemonType) => {
   try {
     const replaceFetchUrl = `${POKEMON_URL.DATA}${id}`;
-    const result = await fetch(replaceFetchUrl);
-
     const fetchSpeciesUrl = `${POKEMON_URL.SPECIES}${id}`;
-    const speciesResult = await fetch(fetchSpeciesUrl);
-    const pokemonSpeciesData: PokemonSpecies = await speciesResult.json();
-    const { names } = pokemonSpeciesData;
 
-    if (!result.ok) {
-      throw new Error(`HTTP error! status: ${result.status}`);
+    // 並列で両方のデータを取得
+    const [pokemonResponse, speciesResponse] = await Promise.all([
+      fetch(replaceFetchUrl),
+      fetch(fetchSpeciesUrl),
+    ]);
+
+    // 各レスポンスのエラーチェック
+    if (!pokemonResponse.ok) {
+      throw new Error(`HTTP error! status: ${pokemonResponse.status}`);
+    }
+    if (!speciesResponse.ok) {
+      throw new Error(`HTTP error! status: ${speciesResponse.status}`);
     }
 
-    // レスポンスをJSONとしてパース
-    const data: PokemonDataType = await result.json();
-    const convertedPokemonData = convertPokemonData(data, names);
+    // JSONデータをパース
+    const pokemonData: PokemonDataType = await pokemonResponse.json();
+    const pokemonSpeciesData: PokemonSpecies = await speciesResponse.json();
+
+    // 必要なデータを取り出して convertPokemonData に渡す
+    const { names } = pokemonSpeciesData;
+    const convertedPokemonData = convertPokemonData(pokemonData, names);
 
     return convertedPokemonData;
   } catch (error) {
@@ -33,53 +47,47 @@ export const fetchPokemon = async ({ id }: fetchPokemonType) => {
   }
 };
 
-// const fetchWithRetry = async (
-//   url: string,
-//   retries: number = 3
-// ): Promise<any> => {
-//   for (let attempt = 0; attempt < retries; attempt++) {
-//     try {
-//       const res = await fetch(url);
-//       if (!res.ok) {
-//         throw new Error(`Failed to fetch: ${res.status} ${res.statusText}`);
-//       }
-//       return await res.json();
-//     } catch (error) {
-//       console.error(`Attempt ${attempt + 1} failed:`, error);
-//       if (attempt === retries - 1) throw error; // 最後の試行でも失敗した場合はエラーをスロー
-//     }
-//   }
-// };
+/**
+ * ポケモンを特定のoffsetから30件分取得し返す
+ * @param offset
+ */
+export const fetchAllPokemon = async (offset: number) => {
+  const MAX_LIMIT = 30;
 
-// const fetchBatch = async (ids: number[]): Promise<any[]> => {
-//   const requests = ids.map((id) => fetchWithRetry(`${POKEMON_URL}${id}`));
-//   return Promise.allSettled(requests).then((results) =>
-//     results
-//       .filter((result) => result.status === "fulfilled")
-//       .map((result) => (result as PromiseFulfilledResult<any>).value)
-//   );
-// };
+  try {
+    // 並列リクエストを実行
+    const promises = Array.from({ length: MAX_LIMIT }, (_, index) => {
+      const id = offset + index;
+      const replaceFetchUrl = `${POKEMON_URL.DATA}${id}`;
+      const fetchSpeciesUrl = `${POKEMON_URL.SPECIES}${id}`;
 
-// export const fetchAllPokemon = async (): Promise<any[]> => {
-//   try {
-//     const batchSize = 10; // 一度に処理するバッチサイズ
-//     const max = 1026;
-//     const pokemonIds = Array.from({ length: 11 }, (_, i) => i + 1);
-//     const batches = [];
+      // 並列で個別のポケモンデータと種データを取得
+      return Promise.all([
+        fetch(replaceFetchUrl).then(async (res) => {
+          if (!res.ok) throw new Error(`Failed to fetch: ${replaceFetchUrl}`);
+          // 型アサーションを追加
+          return (await res.json()) as PokemonDataType;
+        }),
+        fetch(fetchSpeciesUrl).then(async (res) => {
+          if (!res.ok) throw new Error(`Failed to fetch: ${fetchSpeciesUrl}`);
+          // 型アサーションを追加
+          return (await res.json()) as PokemonSpecies;
+        }),
+      ]).then(([pokemonData, pokemonSpeciesData]) => {
+        // namesを取り出し、convertPokemonDataを実行
+        const { names } = pokemonSpeciesData;
+        return convertPokemonData(pokemonData, names);
+      });
+    });
 
-//     for (let i = 0; i < pokemonIds.length; i += batchSize) {
-//       const batchIds = pokemonIds.slice(i, i + batchSize);
-//       batches.push(fetchBatch(batchIds));
-//     }
+    // 全てのリクエストを並列で処理
+    const results = await Promise.all(promises);
 
-//     const allPokemonData = (await Promise.all(batches)).flat();
-//     const convertedPokemonData = allPokemonData.map((data) =>
-//       convertPokemonData(data)
-//     );
+    console.log("Fetched and converted Pokemon data:", results);
 
-//     return convertedPokemonData;
-//   } catch (error) {
-//     console.error("Failed to fetch all Pokemon data:", error);
-//     throw error;
-//   }
-// };
+    return results; // 加工されたデータの配列を返す
+  } catch (error) {
+    console.error("Error fetching all Pokemon data:", error);
+    throw error; // 必要に応じてエラーを再スロー
+  }
+};
