@@ -1,0 +1,1 @@
+export type pokemonID = string;
