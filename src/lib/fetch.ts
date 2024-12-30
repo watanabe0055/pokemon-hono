@@ -52,7 +52,7 @@ export const fetchPokemon = async ({ id }: fetchPokemonType) => {
  * @param offset
  */
 export const fetchAllPokemon = async (offset: number) => {
-  const MAX_LIMIT = 30;
+  const MAX_LIMIT = 50;
 
   try {
     // 並列リクエストを実行

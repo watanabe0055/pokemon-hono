@@ -4,19 +4,22 @@ import { replacePokemonUrlParams } from "../lib/url";
 import { fetchAllPokemon, fetchPokemon } from "../lib/fetch";
 import { ERROR_MESSAGE } from "../constants/errorMessage";
 import { requestId } from "hono/request-id";
+import { cors } from "hono/cors";
 
 const app = new Hono();
 app.use("*", requestId());
+app.use("*", cors());
 
 app.get("/", async (c) => {
-  const pokemonList = await fetchAllPokemon(30);
+  const offset = Number(c.req.query("offset")) || 1;
 
-  // データが null の場合は 400 を返す
-  if (!pokemonList) {
+  // 最大値 1025 を超える場合は何も返さない
+  const MAX_OFFSET = 1025;
+  if (offset > MAX_OFFSET - 29) {
     return new Response(
       JSON.stringify({
-        message: ERROR_MESSAGE.NOT_FOUND,
-        pokemonData: pokemonList,
+        message: "Offset exceeds the maximum limit.",
+        pokemonData: null,
       }),
       {
         headers: { "Content-Type": "application/json" },
@@ -25,16 +28,46 @@ app.get("/", async (c) => {
     );
   }
 
-  return new Response(
-    JSON.stringify({
-      message: ERROR_MESSAGE.SUCCESS,
-      pokemonData: pokemonList,
-    }),
-    {
-      headers: { "Content-Type": "application/json" },
-      status: 200,
+  try {
+    const pokemonList = await fetchAllPokemon(offset);
+
+    // データが null の場合は 400 を返す
+    if (!pokemonList) {
+      return new Response(
+        JSON.stringify({
+          message: ERROR_MESSAGE.NOT_FOUND,
+          pokemonData: pokemonList,
+        }),
+        {
+          headers: { "Content-Type": "application/json" },
+          status: 400,
+        }
+      );
     }
-  );
+
+    return new Response(
+      JSON.stringify({
+        message: ERROR_MESSAGE.SUCCESS,
+        pokemonData: pokemonList,
+      }),
+      {
+        headers: { "Content-Type": "application/json" },
+        status: 200,
+      }
+    );
+  } catch (error) {
+    console.error("Error fetching Pokemon data:", error);
+
+    return new Response(
+      JSON.stringify({
+        message: "Internal Server Error",
+      }),
+      {
+        headers: { "Content-Type": "application/json" },
+        status: 500,
+      }
+    );
+  }
 });
 
 // 動的パス定義
@@ -56,7 +89,9 @@ app.get("/:id", async (c) => {
         id,
       }),
       {
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         status: 400,
       }
     );
