@@ -91,3 +91,31 @@ export const fetchAllPokemon = async (offset: number) => {
     throw error; // 必要に応じてエラーを再スロー
   }
 };
+
+type typePokemonList = {
+  pokemon: [
+    pokemon: {
+      pokemon: {
+        name: string;
+        url: string;
+      };
+      slot: number;
+    }
+  ];
+};
+export const fetchTypePokemonAllList = async (type: string) => {
+  const request = `${POKEMON_URL.TYPE}${type}`;
+  try {
+    const response = await fetch(request);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = (await response.json()) as typePokemonList;
+
+    return data;
+  } catch (error) {
+    console.error("Failed to fetch Pokemon data:", error);
+    throw error;
+  }
+};

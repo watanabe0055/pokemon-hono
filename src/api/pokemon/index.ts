@@ -1,8 +1,8 @@
 import { Hono } from "hono";
-import { replacePokemonUrlParams } from "../lib/url";
+import { replacePokemonUrlParams } from "../../lib/url";
 
-import { fetchAllPokemon, fetchPokemon } from "../lib/fetch";
-import { ERROR_MESSAGE } from "../constants/errorMessage";
+import { fetchAllPokemon, fetchPokemon } from "../../lib/fetch";
+import { ERROR_MESSAGE } from "../../constants/errorMessage";
 import { requestId } from "hono/request-id";
 import { cors } from "hono/cors";
 
