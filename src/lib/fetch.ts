@@ -16,24 +16,31 @@ type fetchPokemonType = {
 export const fetchPokemon = async ({ id }: fetchPokemonType) => {
   try {
     const replaceFetchUrl = `${POKEMON_URL.DATA}${id}`;
-    const fetchSpeciesUrl = `${POKEMON_URL.SPECIES}${id}`;
 
-    // 並列で両方のデータを取得
-    const [pokemonResponse, speciesResponse] = await Promise.all([
-      fetch(replaceFetchUrl),
-      fetch(fetchSpeciesUrl),
-    ]);
+    // `replaceFetchUrl` のデータを取得
+    const pokemonResponse = await fetch(replaceFetchUrl);
 
-    // 各レスポンスのエラーチェック
+    // レスポンスのエラーチェック
     if (!pokemonResponse.ok) {
       throw new Error(`HTTP error! status: ${pokemonResponse.status}`);
-    }
-    if (!speciesResponse.ok) {
-      throw new Error(`HTTP error! status: ${speciesResponse.status}`);
     }
 
     // JSONデータをパース
     const pokemonData: PokemonDataType = await pokemonResponse.json();
+
+    // pokemonData.idが1026以上の場合は何も返さない
+    if (pokemonData.id >= 1026) {
+      return null; // 必要に応じて、他の形式でデータを返すことも可能
+    }
+
+    const fetchSpeciesUrl = `${POKEMON_URL.SPECIES}${id}`;
+    const speciesResponse = await fetch(fetchSpeciesUrl);
+
+    // レスポンスのエラーチェック
+    if (!speciesResponse.ok) {
+      throw new Error(`HTTP error! status: ${speciesResponse.status}`);
+    }
+
     const pokemonSpeciesData: PokemonSpecies = await speciesResponse.json();
 
     // 必要なデータを取り出して convertPokemonData に渡す
