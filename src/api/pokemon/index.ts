@@ -73,6 +73,7 @@ app.get("/", async (c) => {
 // 動的パス定義
 app.get("/:id", async (c) => {
   const id = c.req.param("id"); // URL の ":id" 部分を取得
+
   // データを取得
   const getPokemonData = id
     ? await fetchPokemon({ id }).catch((error) => {
@@ -81,21 +82,23 @@ app.get("/:id", async (c) => {
       })
     : null;
 
-  // データが null の場合は 400 を返す
+  // データが null の場合は 200 を返す
   if (!getPokemonData) {
     return new Response(
       JSON.stringify({
-        message: ERROR_MESSAGE.NOT_FOUND,
+        message: ERROR_MESSAGE.POKEMON_NOT_AVAILABLE,
         id,
+        pokemonData: undefined,
       }),
       {
         headers: {
           "Content-Type": "application/json",
         },
-        status: 400,
+        status: 200,
       }
     );
   }
+
   return new Response(
     JSON.stringify({
       message: ERROR_MESSAGE.SUCCESS,
