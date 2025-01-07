@@ -28,8 +28,9 @@ export const fetchPokemon = async ({ id }: fetchPokemonType) => {
     // JSONデータをパース
     const pokemonData: PokemonDataType = await pokemonResponse.json();
 
+    const MAX_POKEMON_ID = 1025;
     // pokemonData.idが1026以上の場合は何も返さない
-    if (pokemonData.id >= 1026) {
+    if (pokemonData.id > MAX_POKEMON_ID) {
       return null; // 必要に応じて、他の形式でデータを返すことも可能
     }
 

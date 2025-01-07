@@ -86,15 +86,15 @@ app.get("/:id", async (c) => {
   if (!getPokemonData) {
     return new Response(
       JSON.stringify({
-        message: ERROR_MESSAGE.POKEMON_OK_UNKNOWN, // エラーメッセージでなく成功扱い
+        message: ERROR_MESSAGE.POKEMON_NOT_AVAILABLE,
         id,
-        pokemonData: undefined, // データが存在しない
+        pokemonData: undefined,
       }),
       {
         headers: {
           "Content-Type": "application/json",
         },
-        status: 201, // ステータスコードを 200 に設定
+        status: 200,
       }
     );
   }
