@@ -23,7 +23,7 @@ declare type DetailPokemon = {
   genera?: string;
   image?: string;
   types?: string[];
-  abilities?: Array<ability>;
+  abilities: Array<ability> | [];
 };
 
 declare type PokemonOutline = {

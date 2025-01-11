@@ -1,6 +1,7 @@
 import { POKEMON_URL } from "../constants";
 import { pokemonID } from "../type";
 import { PokemonDataType } from "../type/convertPokemon";
+import { AbilityResponseType } from "../type/pokemonAbility";
 import { PokemonSpecies } from "../type/pokemonSpecoes";
 import { convertPokemonData } from "./convert";
 
@@ -44,9 +45,19 @@ export const fetchPokemon = async ({ id }: fetchPokemonType) => {
 
     const pokemonSpeciesData: PokemonSpecies = await speciesResponse.json();
 
+    const getAbility =
+      pokemonData.abilities.length > 0
+        ? await fetchAbility(pokemonData.abilities)
+        : undefined;
+
     // 必要なデータを取り出して convertPokemonData に渡す
     const { names } = pokemonSpeciesData;
-    const convertedPokemonData = convertPokemonData(pokemonData, names);
+
+    const convertedPokemonData = convertPokemonData(
+      pokemonData,
+      names,
+      getAbility
+    );
 
     return convertedPokemonData;
   } catch (error) {
@@ -91,7 +102,7 @@ export const fetchAllPokemon = async (offset: number) => {
     // 全てのリクエストを並列で処理
     const results = await Promise.all(promises);
 
-    console.log("Fetched and converted Pokemon data:", results);
+    // console.log("Fetched and converted Pokemon data:", results);
 
     return results; // 加工されたデータの配列を返す
   } catch (error) {
@@ -125,5 +136,30 @@ export const fetchTypePokemonAllList = async (type: string) => {
   } catch (error) {
     console.error("Failed to fetch Pokemon data:", error);
     throw error;
+  }
+};
+
+export const fetchAbility = async (
+  abilities: PokemonDataType["abilities"]
+): Promise<AbilityResponseType> => {
+  try {
+    const promises = abilities?.map((ability) => {
+      const fetchAbilityUrl = ability.ability.url;
+      return fetch(fetchAbilityUrl).then(async (res) => {
+        if (!res.ok) throw new Error(`Failed to fetch: ${fetchAbilityUrl}`);
+        return (await res.json()) as AbilityResponseType;
+      });
+    });
+
+    const results = await Promise.all(promises);
+
+    return results.reduce((acc, curr) => ({
+      ...curr,
+      names: [...(acc.names || []), ...(curr.names || [])],
+      pokemon: [...(acc.pokemon || []), ...(curr.pokemon || [])],
+    }));
+  } catch (error) {
+    console.error("Error fetching all Pokemon data:", error);
+    throw error; // 必要に応じてエラーを再スロー
   }
 };
