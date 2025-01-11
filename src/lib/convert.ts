@@ -21,7 +21,10 @@ export const convertPokemonData = (
     sprites: convertedData.sprites,
     stats: data.stats,
     types: data.types,
-    abilities: { abilities: data.abilities, names: ability?.names },
+    abilities: {
+      abilities: data.abilities ?? [],
+      names: ability?.names,
+    },
   };
 };
 

@@ -7,7 +7,7 @@ type LanguageType = {
 
 type EffectEntryType = {
   effect: string;
-  language: Array<LanguageType>;
+  language: LanguageType;
   short_effect: string;
 };
 
@@ -22,7 +22,7 @@ type versionGroupType = {
 };
 type flavorTextEntryType = {
   flavor_text: string;
-  language: Array<LanguageType>;
+  language: LanguageType;
   version_group: versionGroupType;
 };
 
@@ -42,7 +42,7 @@ type generationType = { name: string; url: string };
 type isMainSeries = boolean;
 
 type nameType = {
-  language: Array<LanguageType>;
+  language: LanguageType;
   name: string;
 };
 

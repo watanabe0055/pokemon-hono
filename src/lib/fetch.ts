@@ -45,7 +45,10 @@ export const fetchPokemon = async ({ id }: fetchPokemonType) => {
 
     const pokemonSpeciesData: PokemonSpecies = await speciesResponse.json();
 
-    const getAbility = await fetchAbility(pokemonData.abilities);
+    const getAbility =
+      pokemonData.abilities.length > 0
+        ? await fetchAbility(pokemonData.abilities)
+        : undefined;
 
     // 必要なデータを取り出して convertPokemonData に渡す
     const { names } = pokemonSpeciesData;
@@ -150,9 +153,11 @@ export const fetchAbility = async (
 
     const results = await Promise.all(promises);
 
-    // console.log("Fetched and converted Pokemon data:", results);
-
-    return results[0]; // 加工されたデータの配列を返す
+    return results.reduce((acc, curr) => ({
+      ...curr,
+      names: [...(acc.names || []), ...(curr.names || [])],
+      pokemon: [...(acc.pokemon || []), ...(curr.pokemon || [])],
+    }));
   } catch (error) {
     console.error("Error fetching all Pokemon data:", error);
     throw error; // 必要に応じてエラーを再スロー
