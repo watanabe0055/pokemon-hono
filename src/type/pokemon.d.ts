@@ -11,13 +11,19 @@ declare type ListPageItem = {
   nextUrl: string;
 };
 
+declare type ability = {
+  ability: { name: string; url: string };
+  is_hidden: boolean;
+  slot: number;
+};
+
 declare type DetailPokemon = {
   id: string;
-  name: string | undefined;
-  genera: string | undefined;
-  image: string | undefined;
-  types: string[] | undefined;
-  abilities: string[] | undefined;
+  name?: string;
+  genera?: string;
+  image?: string;
+  types?: string[];
+  abilities?: Array<ability>;
 };
 
 declare type PokemonOutline = {

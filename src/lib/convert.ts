@@ -18,6 +18,7 @@ export const convertPokemonData = (
     sprites: convertedData.sprites,
     stats: data.stats,
     types: data.types,
+    abilities: data.abilities,
   };
 };
 
