@@ -66,6 +66,7 @@ export type PokemonDataType = {
   sprites: SpritesType;
   stats: StatsType;
   types: Types;
+  abilities: DetailPokemon["abilities"];
 };
 
 /**
