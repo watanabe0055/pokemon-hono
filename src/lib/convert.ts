@@ -11,9 +11,12 @@ import { fetchAbility } from "./fetch";
 export const convertPokemonData = (
   data: PokemonDataType,
   names: SpeciesListType,
-  ability?: AbilityResponseType
+  abilities?: Array<AbilityResponseType>
 ) => {
   const convertedData = convertKeys(data);
+  const convertedAbilityList = abilities
+    ? convertAbilityTextList(abilities)
+    : [];
 
   return {
     id: data.id,
@@ -21,11 +24,33 @@ export const convertPokemonData = (
     sprites: convertedData.sprites,
     stats: data.stats,
     types: data.types,
-    abilities: {
-      abilities: data.abilities ?? [],
-      names: ability?.names,
-    },
+    abilities: convertedAbilityList,
   };
+};
+
+const convertAbilityTextList = (abilities: Array<AbilityResponseType>) => {
+  const extractJapaneseEntry = <T extends { language: { name: string } }>(
+    entries: T[]
+  ) => entries.find((entry) => entry.language.name === "ja");
+
+  const combinedList = abilities.map((ability) => {
+    const jaName = extractJapaneseEntry(ability.names);
+    const jaText = extractJapaneseEntry(ability.flavor_text_entries);
+
+    if (jaName && jaText) {
+      return {
+        name: jaName.name,
+        flavor_text: jaText.flavor_text,
+        language: jaText.language,
+        version_group: jaText.version_group,
+      };
+    }
+
+    return null;
+  });
+
+  // null を除外して返す
+  return combinedList.filter((entry) => entry !== null);
 };
 
 type TransformKey<T> = {
