@@ -141,23 +141,20 @@ export const fetchTypePokemonAllList = async (type: string) => {
 
 export const fetchAbility = async (
   abilities: PokemonDataType["abilities"]
-): Promise<AbilityResponseType> => {
+): Promise<Array<AbilityResponseType>> => {
   try {
     const promises = abilities?.map((ability) => {
       const fetchAbilityUrl = ability.ability.url;
       return fetch(fetchAbilityUrl).then(async (res) => {
         if (!res.ok) throw new Error(`Failed to fetch: ${fetchAbilityUrl}`);
+
         return (await res.json()) as AbilityResponseType;
       });
     });
 
     const results = await Promise.all(promises);
 
-    return results.reduce((acc, curr) => ({
-      ...curr,
-      names: [...(acc.names || []), ...(curr.names || [])],
-      pokemon: [...(acc.pokemon || []), ...(curr.pokemon || [])],
-    }));
+    return results;
   } catch (error) {
     console.error("Error fetching all Pokemon data:", error);
     throw error; // 必要に応じてエラーを再スロー
