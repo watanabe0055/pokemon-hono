@@ -1,3 +1,6 @@
+import { flavorTextEntryType } from "./pokemonAbility";
+import { SpeciesListType } from "./pokemonSpecoes";
+
 // 定義: 通常のスプライトの型
 type Sprite = string | null;
 
@@ -86,4 +89,13 @@ export type GetPokemonDataType = {
   id: RequestId;
   message: ResponseMessage;
   pokemonData: ConvertPokemonDataType;
+};
+
+export type ConvertedPokemonDataType = {
+  id: number;
+  names: SpeciesListType;
+  sprites: SpritesType;
+  stats: StatsType;
+  types: Types;
+  abilities: Array<flavorTextEntryType & { name: string }>;
 };
