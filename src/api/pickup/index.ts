@@ -20,6 +20,20 @@ app.get("/", async () => {
     numbers.map((id) => fetchPokemon({ id: id.toString() }))
   );
 
+  // データがnullの時は400を返す
+  if (!pokemonList) {
+    return new Response(
+      JSON.stringify({
+        message: ERROR_MESSAGE.NOT_FOUND,
+        pokemonData: pokemonList,
+      }),
+      {
+        headers: { "Content-Type": "application/json" },
+        status: 400,
+      }
+    );
+  }
+
   return new Response(
     JSON.stringify({
       message: ERROR_MESSAGE.SUCCESS,
