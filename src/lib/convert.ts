@@ -1,7 +1,9 @@
-import { PokemonDataType, SpritesType } from "../type/convertPokemon";
+import {
+  ConvertedPokemonDataType,
+  PokemonDataType,
+} from "../type/convertPokemon";
 import { AbilityResponseType } from "../type/pokemonAbility";
 import { SpeciesListType } from "../type/pokemonSpecoes";
-import { fetchAbility } from "./fetch";
 
 /**
  * 数が多いので必要なデータだけを選択して返す
@@ -12,7 +14,7 @@ export const convertPokemonData = (
   data: PokemonDataType,
   names: SpeciesListType,
   abilities?: Array<AbilityResponseType>
-) => {
+): ConvertedPokemonDataType => {
   const convertedData = convertKeys(data);
   const convertedAbilityList = abilities
     ? convertAbilityTextList(abilities)

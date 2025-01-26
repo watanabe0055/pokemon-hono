@@ -21,7 +21,7 @@ app.get("/", async () => {
   );
 
   // データがnullの時は400を返す
-  if (!pokemonList) {
+  if (!pokemonList || pokemonList.length === 0) {
     return new Response(
       JSON.stringify({
         message: ERROR_MESSAGE.NOT_FOUND,
