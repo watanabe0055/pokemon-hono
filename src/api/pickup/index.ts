@@ -9,6 +9,9 @@ const app = new Hono();
 app.use("*", requestId());
 app.use("*", cors());
 
+/**
+ * 本日の日付を元にランダムなポケモンのデータ（４つ）を返す
+ */
 app.get("/", async () => {
   const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD形式の日付
   const numbers = getRandomNumbersForToday(today);
