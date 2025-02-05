@@ -3,12 +3,12 @@ import { fetchAllPokemon, fetchPokemon } from "../../lib/fetch";
 import { ERROR_MESSAGE } from "../../constants/errorMessage";
 import { requestId } from "hono/request-id";
 import { cors } from "hono/cors";
+import { JSON_HEADERS } from "../../constants";
 
 const app = new Hono();
 
 // 定数の定義
 const MAX_OFFSET = 1025;
-const JSON_HEADERS = { "Content-Type": "application/json" };
 
 // レスポンスの共通処理
 const createResponse = (message: string, data: any, status: number) => {
