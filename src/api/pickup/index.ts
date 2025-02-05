@@ -4,17 +4,9 @@ import { requestId } from "hono/request-id";
 import { fetchPokemon } from "../../lib/fetch";
 import { ERROR_MESSAGE } from "../../constants/errorMessage";
 import { getRandomNumbersForToday } from "../../lib/random";
-import { JSON_HEADERS } from "../../constants";
+import { createResponse } from "../../constants/response";
 
 const app = new Hono();
-
-// レスポンスの共通処理
-const createResponse = (message: string, data: any, status: number) => {
-  return new Response(JSON.stringify({ message, pokemonData: data }), {
-    headers: JSON_HEADERS,
-    status,
-  });
-};
 
 app.use("*", requestId());
 app.use("*", cors());

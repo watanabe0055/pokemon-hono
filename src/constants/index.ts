@@ -5,5 +5,3 @@ export const POKEMON_URL = {
   DATA: `${BASE_URL}` + "pokemon/",
   SPECIES: `${BASE_URL}` + "pokemon-species/",
 };
-
-export const JSON_HEADERS = { "Content-Type": "application/json" };
