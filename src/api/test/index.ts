@@ -1,14 +1,8 @@
 import { Hono } from "hono";
 import { authMiddleware } from "../../middleware";
+import { AppEnv, AppHono, AppVariables } from "../../type/hono";
 
-type Variables = {
-  user: {
-    id: string;
-    email: string;
-  };
-};
-
-const app = new Hono<{ Variables: Variables }>();
+const app: AppHono = new Hono<{ Variables: AppVariables; Bindings: AppEnv }>();
 
 // 公開APIエンドポイント（認証不要）
 app.get("/public", (c) => {

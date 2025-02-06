@@ -1,11 +1,6 @@
 import { Context, Next } from "hono";
 import { createClient } from "@supabase/supabase-js";
 
-type Token = {
-  SUPABASE_URL: string;
-  SUPABASE_ANON_KEY: string;
-};
-
 export const authMiddleware = async (c: Context, next: Next) => {
   const authHeader = c.req.header("Authorization");
 

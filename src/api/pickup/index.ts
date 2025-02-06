@@ -5,8 +5,9 @@ import { fetchPokemon } from "../../lib/fetch";
 import { ERROR_MESSAGE } from "../../constants/errorMessage";
 import { getRandomNumbersForToday } from "../../lib/random";
 import { createResponse } from "../../constants/response";
+import { AppHono, AppVariables, AppEnv } from "../../type/hono";
 
-const app = new Hono();
+const app: AppHono = new Hono<{ Variables: AppVariables; Bindings: AppEnv }>();
 
 app.use("*", requestId());
 app.use("*", cors());

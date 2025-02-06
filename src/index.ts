@@ -1,8 +1,10 @@
 import { Hono } from "hono";
 import { prettyJSON } from "hono/pretty-json";
 import v1 from "./version/v1";
+import { AppHono } from "./type/hono";
 
-const app = new Hono();
+const app: AppHono = new Hono();
+
 app.use("*", prettyJSON());
 
 app.route("/v1", v1);
