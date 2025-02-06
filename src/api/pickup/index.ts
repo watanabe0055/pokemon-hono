@@ -4,8 +4,10 @@ import { requestId } from "hono/request-id";
 import { fetchPokemon } from "../../lib/fetch";
 import { ERROR_MESSAGE } from "../../constants/errorMessage";
 import { getRandomNumbersForToday } from "../../lib/random";
+import { createResponse } from "../../constants/response";
 
 const app = new Hono();
+
 app.use("*", requestId());
 app.use("*", cors());
 
@@ -16,34 +18,21 @@ app.get("/", async () => {
   const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD形式の日付
   const numbers = getRandomNumbersForToday(today);
 
-  const pokemonList = await Promise.all(
-    numbers.map((id) => fetchPokemon({ id: id.toString() }))
-  );
-
-  // データがnullの時は400を返す
-  if (!pokemonList || pokemonList.length === 0) {
-    return new Response(
-      JSON.stringify({
-        message: ERROR_MESSAGE.NOT_FOUND,
-        pokemonData: pokemonList,
-      }),
-      {
-        headers: { "Content-Type": "application/json" },
-        status: 400,
-      }
+  try {
+    const pokemonList = await Promise.all(
+      numbers.map((id) => fetchPokemon({ id: id.toString() }))
     );
-  }
 
-  return new Response(
-    JSON.stringify({
-      message: ERROR_MESSAGE.SUCCESS,
-      pokemonData: pokemonList,
-    }),
-    {
-      headers: { "Content-Type": "application/json" },
-      status: 200,
+    // データがnullまたは空のときはエラーレスポンス
+    if (!pokemonList || pokemonList.length === 0) {
+      return createResponse(ERROR_MESSAGE.NOT_FOUND, pokemonList, 400);
     }
-  );
+
+    return createResponse(ERROR_MESSAGE.SUCCESS, pokemonList, 200);
+  } catch (error) {
+    console.error("Error fetching Pokemon data:", error);
+    return createResponse("Internal Server Error", null, 500);
+  }
 });
 
 export default app;
