@@ -4,8 +4,9 @@ import { ERROR_MESSAGE } from "../../constants/errorMessage";
 import { requestId } from "hono/request-id";
 import { cors } from "hono/cors";
 import { createResponse } from "../../constants/response";
+import { AppEnv, AppHono, AppVariables } from "../../type/hono";
 
-const app = new Hono();
+const app: AppHono = new Hono<{ Variables: AppVariables; Bindings: AppEnv }>();
 
 // 定数の定義
 const MAX_OFFSET = 1025;

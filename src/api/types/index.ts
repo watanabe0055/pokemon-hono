@@ -3,8 +3,9 @@ import { requestId } from "hono/request-id";
 import { cors } from "hono/cors";
 import { POKEMON_URL } from "../../constants";
 import { fetchTypePokemonAllList } from "../../lib/fetch";
+import { AppHono, AppVariables, AppEnv } from "../../type/hono";
 
-const app = new Hono();
+const app: AppHono = new Hono<{ Variables: AppVariables; Bindings: AppEnv }>();
 app.use("*", requestId());
 app.use("*", cors());
 
