@@ -4,11 +4,17 @@ export const fetchUserProfile = async (accessToken: string) => {
   const path = `${baseUrl}/v1/private/profile`;
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     const response = await fetch(path, {
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -20,7 +26,7 @@ export const fetchUserProfile = async (accessToken: string) => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching profile:', error);
-    throw error;
+    console.error("Error fetching profile:", error);
+    throw new Error("予期せぬエラーが発生しました");
   }
 };

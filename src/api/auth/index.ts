@@ -21,10 +21,7 @@ app.get("/private/profile", (c) => {
 
   return c.json({
     message: "認証済みユーザーのみアクセス可能",
-    user: {
-      id: user.id,
-      email: user.email,
-    },
+    isLoginUser: !!user,
   });
 });
 
