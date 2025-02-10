@@ -13,12 +13,13 @@ describe("Pickup API", () => {
 
     // // レスポンスボディを確認
     const data = await res.json();
+    console.log(data);
 
     // // ポケモンリストの長さが4であることを確認
-    expect(data.pokemonData).toHaveLength(4);
+    expect(data.data).toHaveLength(4);
 
     // // 各ポケモンデータの基本的な構造を確認
-    data.pokemonData.forEach((pokemon) => {
+    data.data.forEach((pokemon) => {
       expect(pokemon).toHaveProperty("id");
       expect(pokemon).toHaveProperty("names");
       expect(pokemon).toHaveProperty("sprites");

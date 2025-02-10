@@ -66,3 +66,33 @@ export type AbilityResponseType = {
   names: namesType;
   pokemon: pokemonListType;
 };
+
+/**
+ * honoAPIでコンバートしてアビリティーの一部だけを返してるプロパティ
+ */
+
+export type AbilityHonoResponseType = Pick<
+  flavorTextEntryType,
+  "flavor_text" | "language" | "version_group"
+> &
+  Pick<AbilityResponseType, "name">;
+
+export type AbilityListHonoResponseType = {
+  abilities: Array<AbilityHonoResponseType>;
+};
+
+/**
+ * コンバートして必要なところだけ抽出した型定義
+ */
+export type ConvertPokemonDataType = {
+  id: number;
+  names: PokemonSpecies;
+  sprites: SpritesType;
+  stats: StatsType;
+  types: Types;
+};
+
+export type GetPokemonDataPickUpType = {
+  message: ResponseMessage;
+  pokemonData: Array<ConvertPokemonDataType & AbilityListHonoResponseType> | [];
+};
