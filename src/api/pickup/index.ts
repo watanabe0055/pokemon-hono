@@ -43,7 +43,7 @@ app.get("/", async () => {
     );
   } catch (error) {
     console.error("Error fetching Pokemon data:", error);
-    return createResponse("Internal Server Error", null, 500);
+    return createResponse("Internal Server Error", [], 500);
   }
 });
 
