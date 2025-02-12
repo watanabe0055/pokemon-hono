@@ -1,9 +1,9 @@
-import {
+import type {
   ConvertedPokemonDataType,
   PokemonDataType,
 } from "../type/convertPokemon";
-import { AbilityResponseType } from "../type/pokemonAbility";
-import { SpeciesListType } from "../type/pokemonSpecoes";
+import type { AbilityResponseType } from "../type/pokemonAbility";
+import type { SpeciesListType } from "../type/pokemonSpecoes";
 
 /**
  * 数が多いので必要なデータだけを選択して返す
@@ -66,17 +66,15 @@ type TransformKey<T> = {
 /**
  * 一部スネークケースになってなかったので、スネークケースに変換
  */
-function convertKeys<T extends Record<string, unknown>>(
-  data: T
-): TransformKey<T> {
-  const result: any = {};
+function convertKeys<T extends Record<string, unknown>>(data: T): T {
+  const result: Record<string, unknown> = {}; // any を使わない
 
   for (const key in data) {
     const newKey = key.replace(/-/g, "_"); // ハイフンをアンダースコアに変換
     const value = data[key];
     result[newKey] =
-      value && typeof value === "object" ? convertKeys(value) : value;
+      value && typeof value === "object" ? convertKeys(value as Record<string, unknown>) : value;
   }
 
-  return result;
+  return result as T; // 型を T にキャスト
 }

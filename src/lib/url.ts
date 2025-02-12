@@ -5,10 +5,10 @@
  * @returns
  */
 export const replacePokemonUrlParams = (
-  query: Record<string, string>
+	query: Record<string, string>,
 ): { id?: string; status?: string } => {
-  // 必要なキーだけを抽出
-  const { id, status } = query;
+	// 必要なキーだけを抽出
+	const { id, status } = query;
 
-  return { id, status };
+	return { id, status };
 };
