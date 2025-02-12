@@ -6,6 +6,8 @@ import { ERROR_MESSAGE } from "../../constants/errorMessage";
 import { getRandomNumbersForToday } from "../../lib/random";
 import { createResponse } from "../../constants/response";
 import { AppHono, AppVariables, AppEnv } from "../../type/hono";
+import { GetPokemonDataPickUpType } from "../../type/pokemonAbility";
+import { ConvertedPokemonDataType } from "../../type/convertPokemon";
 
 const app: AppHono = new Hono<{ Variables: AppVariables; Bindings: AppEnv }>();
 
@@ -22,17 +24,26 @@ app.get("/", async () => {
   try {
     const pokemonList = await Promise.all(
       numbers.map((id) => fetchPokemon({ id: id.toString() }))
+    ).then((list) =>
+      list.filter((item): item is ConvertedPokemonDataType => item !== null)
     );
 
-    // データがnullまたは空のときはエラーレスポンス
-    if (!pokemonList || pokemonList.length === 0) {
-      return createResponse(ERROR_MESSAGE.NOT_FOUND, pokemonList, 400);
+    if (pokemonList.length === 0) {
+      return createResponse<GetPokemonDataPickUpType[]>(
+        ERROR_MESSAGE.NOT_FOUND,
+        [],
+        400
+      );
     }
 
-    return createResponse(ERROR_MESSAGE.SUCCESS, pokemonList, 200);
+    return createResponse<ConvertedPokemonDataType[]>(
+      ERROR_MESSAGE.SUCCESS,
+      pokemonList,
+      200
+    );
   } catch (error) {
     console.error("Error fetching Pokemon data:", error);
-    return createResponse("Internal Server Error", null, 500);
+    return createResponse("Internal Server Error", [], 500);
   }
 });
 
