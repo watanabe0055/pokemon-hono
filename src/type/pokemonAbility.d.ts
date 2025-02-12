@@ -1,14 +1,14 @@
 type EffectChangesType = [];
 
 type LanguageType = {
-  name: string;
-  url: string;
+	name: string;
+	url: string;
 };
 
 type EffectEntryType = {
-  effect: string;
-  language: LanguageType;
-  short_effect: string;
+	effect: string;
+	language: LanguageType;
+	short_effect: string;
 };
 
 /**
@@ -17,13 +17,13 @@ type EffectEntryType = {
 type EffectEntries = Array<EffectEntryType>;
 
 type versionGroupType = {
-  name: string;
-  url: string;
+	name: string;
+	url: string;
 };
 type flavorTextEntryType = {
-  flavor_text: string;
-  language: LanguageType;
-  version_group: versionGroupType;
+	flavor_text: string;
+	language: LanguageType;
+	version_group: versionGroupType;
 };
 
 /**
@@ -42,29 +42,29 @@ type generationType = { name: string; url: string };
 type isMainSeries = boolean;
 
 type nameType = {
-  language: LanguageType;
-  name: string;
+	language: LanguageType;
+	name: string;
 };
 
 type namesType = Array<nameType>;
 
 type pokemonType = {
-  is_hidden: boolean;
-  pokemon: versionGroupType;
-  slot: number;
+	is_hidden: boolean;
+	pokemon: versionGroupType;
+	slot: number;
 };
 
 type pokemonListType = Array<pokemonType>;
 
 export type AbilityResponseType = {
-  effect_changes: EffectChangesType;
-  effect_entries: EffectEntries;
-  flavor_text_entries: flavorTextEntriesType;
-  generation: generationType;
-  id: string;
-  name: string;
-  names: namesType;
-  pokemon: pokemonListType;
+	effect_changes: EffectChangesType;
+	effect_entries: EffectEntries;
+	flavor_text_entries: flavorTextEntriesType;
+	generation: generationType;
+	id: string;
+	name: string;
+	names: namesType;
+	pokemon: pokemonListType;
 };
 
 /**
@@ -72,27 +72,27 @@ export type AbilityResponseType = {
  */
 
 export type AbilityHonoResponseType = Pick<
-  flavorTextEntryType,
-  "flavor_text" | "language" | "version_group"
+	flavorTextEntryType,
+	"flavor_text" | "language" | "version_group"
 > &
-  Pick<AbilityResponseType, "name">;
+	Pick<AbilityResponseType, "name">;
 
 export type AbilityListHonoResponseType = {
-  abilities: Array<AbilityHonoResponseType>;
+	abilities: Array<AbilityHonoResponseType>;
 };
 
 /**
  * コンバートして必要なところだけ抽出した型定義
  */
 export type ConvertPokemonDataType = {
-  id: number;
-  names: PokemonSpecies;
-  sprites: SpritesType;
-  stats: StatsType;
-  types: Types;
+	id: number;
+	names: PokemonSpecies;
+	sprites: SpritesType;
+	stats: StatsType;
+	types: Types;
 };
 
 export type GetPokemonDataPickUpType = {
-  message: ResponseMessage;
-  pokemonData: Array<ConvertPokemonDataType & AbilityListHonoResponseType> | [];
+	message: ResponseMessage;
+	pokemonData: Array<ConvertPokemonDataType & AbilityListHonoResponseType> | [];
 };
