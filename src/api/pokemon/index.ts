@@ -5,6 +5,7 @@ import { requestId } from "hono/request-id";
 import { cors } from "hono/cors";
 import { createResponse } from "../../constants/response";
 import { AppEnv, AppHono, AppVariables } from "../../type/hono";
+import { ConvertedPokemonDataType } from "../../type/convertPokemon";
 
 const app: AppHono = new Hono<{ Variables: AppVariables; Bindings: AppEnv }>();
 
@@ -30,7 +31,11 @@ app.get("/", async (c) => {
       return createResponse(ERROR_MESSAGE.NOT_FOUND, pokemonList, 400);
     }
 
-    return createResponse(ERROR_MESSAGE.SUCCESS, pokemonList, 200);
+    return createResponse<Array<ConvertedPokemonDataType>>(
+      ERROR_MESSAGE.SUCCESS,
+      pokemonList,
+      200
+    );
   } catch (error) {
     console.error("Error fetching Pokemon data:", error);
     return createResponse("Internal Server Error", null, 500);
