@@ -1,6 +1,8 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 // トークンからユーザー取得のヘルパー関数
 export const getUserFromToken = async (
-  supabase: any,
+  supabase: SupabaseClient,
   authHeader: string | undefined
 ) => {
   if (!authHeader) {
