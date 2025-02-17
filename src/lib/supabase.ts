@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { AppEnv } from "../type/hono";
+import type { AppEnv } from "../type/hono";
 
 // Supabaseクライアント作成のヘルパー関数
 export const createSupabaseClient = (env: AppEnv) => {
