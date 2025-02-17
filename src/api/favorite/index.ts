@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { fetchAllPokemon, fetchPokemon } from "../../lib/fetch";
+import { fetchPokemon } from "../../lib/fetch";
 import { ERROR_MESSAGE } from "../../constants/errorMessage";
 import { requestId } from "hono/request-id";
 import { cors } from "hono/cors";
@@ -7,15 +7,18 @@ import { createResponse } from "../../constants/response";
 import type { AppEnv, AppHono, AppVariables } from "../../type/hono";
 import type { ConvertedPokemonDataType } from "../../type/convertPokemon";
 import { authMiddleware } from "../../middleware";
-import { createClient } from "@supabase/supabase-js";
-import { GetPokemonDataPickUpType } from "../../type/pokemonAbility";
+import { getUserFromToken } from "../../lib/user";
+import { createSupabaseClient } from "../../lib/supabase";
+import type { GetPokemonDataPickUpType } from "../../type/pokemonAbility";
 
 const app: AppHono = new Hono<{ Variables: AppVariables; Bindings: AppEnv }>();
 
+// ミドルウェアの設定
 app.use("*", requestId());
 app.use("*", cors());
-// app.use("*", authMiddleware);
+app.use("*", authMiddleware);
 
+// 型定義
 type FavoriteType = {
   id: number;
   created_at: string;
@@ -27,50 +30,66 @@ type UserFavoriteType = {
   favorite: FavoriteType;
 };
 
+type SupabaseError = {
+  message: string;
+  details?: string;
+  hint?: string;
+  code?: string;
+};
+
 /**
  * お気に入り登録しているポケモンを返す
  */
 app.get("/", async (c) => {
-  const supabase = createClient(c.env.SUPABASE_URL, c.env.SUPABASE_ANON_KEY);
-  const authHeader = c.req.header("Authorization");
-  const token = authHeader?.split(" ")[1];
-  const {
-    data: { user },
-  } = await supabase.auth.getUser(token);
-
-  // Supabase のクエリを実行
-  const { data, error } = (await supabase
-    .from("user_favorite")
-    .select("favorite(id, created_at, is_deleted, pokemon_id)")
-    .eq("user_id", user?.id)) as {
-    data: UserFavoriteType[] | null;
-    error: any;
-  };
-
-  if (error) {
-    console.error("Supabase error:", error);
-    return c.json({ error: error.message }, 500);
-  }
-
-  // 型アサーションを適用
-  const favoriteList: UserFavoriteType[] = data ?? [];
-
   try {
-    const pokemonList = await Promise.all(
-      favoriteList.map((item) =>
-        fetchPokemon({ id: item.favorite.pokemon_id.toString() })
-      )
-    ).then((item) =>
-      item.filter((item): item is ConvertedPokemonDataType => item !== null)
+    const supabase = createSupabaseClient(c.env);
+    const user = await getUserFromToken(
+      supabase,
+      c.req.header("Authorization")
     );
 
-    if (pokemonList.length === 0) {
+    // Supabase のクエリを実行
+    const { data, error } = (await supabase
+      .from("user_favorite")
+      .select("favorite(id, created_at, is_deleted, pokemon_id)")
+      .eq("user_id", user.id)) as {
+      data: UserFavoriteType[] | null;
+      error: SupabaseError | null;
+    };
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return createResponse("データベースエラーが発生しました", [], 500);
+    }
+
+    // 型アサーションを適用
+    const favoriteList: UserFavoriteType[] = data ?? [];
+
+    if (favoriteList.length === 0) {
       return createResponse<GetPokemonDataPickUpType[]>(
-        ERROR_MESSAGE.NOT_FOUND,
+        "お気に入りが見つかりません",
         [],
-        400
+        200 // 404ではなく200を返す（空の配列は正常なレスポース）
       );
     }
+
+    const pokemonList = await Promise.all(
+      favoriteList.map(async (item) => {
+        try {
+          return await fetchPokemon({
+            id: item.favorite.pokemon_id.toString(),
+          });
+        } catch (err) {
+          console.error(
+            `ポケモンID ${item.favorite.pokemon_id} の取得に失敗:`,
+            err
+          );
+          return null;
+        }
+      })
+    ).then((items) =>
+      items.filter((item): item is ConvertedPokemonDataType => item !== null)
+    );
 
     return createResponse<ConvertedPokemonDataType[]>(
       ERROR_MESSAGE.SUCCESS,
@@ -78,122 +97,237 @@ app.get("/", async (c) => {
       200
     );
   } catch (error) {
-    console.error("Error fetching Pokemon data:", error);
+    console.error("Error in GET /favorite:", error);
+
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    if (errorMessage.includes("認証")) {
+      return createResponse(errorMessage, [], 401);
+    }
+
     return createResponse("Internal Server Error", [], 500);
   }
 });
 
-// ポケモン詳細取得（動的パス）
+/**
+ * お気に入りにポケモンを追加
+ */
 app.post("/", async (c) => {
-  const supabase = createClient(c.env.SUPABASE_URL, c.env.SUPABASE_ANON_KEY);
-  const authHeader = c.req.header("Authorization");
-  const token = authHeader?.split(" ")[1];
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser(token);
-
-  if (!user || !user.id) {
-    return c.json(
-      { error: "認証されていないか、ユーザーIDが取得できません" },
-      401
+  try {
+    const supabase = createSupabaseClient(c.env);
+    const user = await getUserFromToken(
+      supabase,
+      c.req.header("Authorization")
     );
-  }
 
-  const body = await c.req.json();
-  const pokemonId = body.pokemon[0]; // pokemon配列から最初のID取得
+    // リクエストボディの検証
+    const body = await c.req.json().catch(() => {
+      throw new Error("リクエストボディの解析に失敗しました");
+    });
 
-  if (!pokemonId) {
-    return c.json({ error: "Pokemon IDが指定されていません" }, 400);
-  }
+    // pokemonIdが直接指定されるように変更
+    if (
+      !body.pokemonId ||
+      typeof body.pokemonId !== "number" ||
+      body.pokemonId <= 0
+    ) {
+      throw new Error("有効なpokemonIdが指定されていません");
+    }
 
-  // 1. favoriteテーブルから既存エントリを検索
-  const { data: existingFavorite, error: selectError } = await supabase
-    .from("favorite")
-    .select("id")
-    .eq("pokemon_id", pokemonId)
-    .maybeSingle();
+    const pokemonId = body.pokemonId;
 
-  if (selectError) {
-    return c.json(
-      { error: "favoriteの検索中にエラーが発生しました", details: selectError },
-      500
-    );
-  }
-
-  // 2. favoriteIdを取得（既存または新規作成）
-  let favoriteId;
-
-  if (existingFavorite) {
-    favoriteId = existingFavorite.id;
-    console.log("既存のfavoriteを使用:", favoriteId);
-  } else {
-    const { data: newFavorite, error: createError } = await supabase
+    // トランザクション的アプローチ（Supabaseではネイティブトランザクションが使えないため）
+    // 1. favoriteテーブルから既存エントリを検索
+    const { data: existingFavorite, error: selectError } = await supabase
       .from("favorite")
-      .insert({
-        pokemon_id: pokemonId,
-        created_at: new Date().toISOString(),
-        is_deleted: false,
-      })
       .select("id")
-      .single();
+      .eq("pokemon_id", pokemonId)
+      .maybeSingle();
 
-    if (createError || !newFavorite) {
-      return c.json(
-        {
-          error: "favoriteの作成に失敗しました",
-          details: createError,
-        },
-        500
+    if (selectError) {
+      throw new Error(
+        `favoriteの検索中にエラーが発生しました: ${selectError.message}`
       );
     }
 
-    favoriteId = newFavorite.id;
-    console.log("新しいfavoriteを作成:", favoriteId);
-  }
+    // 2. favoriteIdを取得（既存または新規作成）
+    const favoriteId = await (async (): Promise<number> => {
+      if (existingFavorite) {
+        return existingFavorite.id;
+      }
 
-  if (typeof favoriteId !== "number") {
-    return c.json(
-      {
-        error: "無効なfavorite_id",
-        details: {
-          actual_type: typeof favoriteId,
-          value: favoriteId,
-        },
-      },
-      500
-    );
-  }
+      const { data: newFavorite, error: createError } = await supabase
+        .from("favorite")
+        .insert({
+          pokemon_id: pokemonId,
+          created_at: new Date().toISOString(),
+          is_deleted: false,
+        })
+        .select("id")
+        .single();
 
-  // 3. user_favoriteテーブルに関連付けを登録
-  const { error: insertError } = await supabase.from("user_favorite").insert({
-    user_id: user.id,
-    favorite_id: favoriteId,
-  });
+      if (createError || !newFavorite) {
+        throw new Error(
+          `favoriteの作成に失敗しました: ${
+            createError?.message || "不明なエラー"
+          }`
+        );
+      }
 
-  if (insertError) {
-    return c.json(
-      {
-        error: "user_favoriteの登録に失敗しました",
-        details: insertError,
-        debug: {
+      return newFavorite.id;
+    })();
+
+    // 既存のuser_favorite関連付けをチェック
+    const { data: existingUserFavorite, error: checkError } = await supabase
+      .from("user_favorite")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("favorite_id", favoriteId)
+      .maybeSingle();
+
+    if (checkError) {
+      throw new Error(
+        `既存のuser_favoriteチェック中にエラーが発生しました: ${checkError.message}`
+      );
+    }
+
+    if (existingUserFavorite) {
+      return c.json(
+        {
+          message: "既にお気に入りに登録されています",
           user_id: user.id,
-          user_id_type: typeof user.id,
           favorite_id: favoriteId,
-          favorite_id_type: typeof favoriteId,
+          pokemon_id: pokemonId,
         },
+        200
+      );
+    }
+
+    // 3. user_favoriteテーブルに関連付けを登録
+    const { error: insertError } = await supabase.from("user_favorite").insert({
+      user_id: user.id,
+      favorite_id: favoriteId,
+    });
+
+    if (insertError) {
+      throw new Error(
+        `user_favoriteの登録に失敗しました: ${insertError.message}`
+      );
+    }
+
+    // 4. 成功レスポンスを返す
+    return c.json(
+      {
+        message: "お気に入りを登録しました",
+        user_id: user.id,
+        favorite_id: favoriteId,
+        pokemon_id: pokemonId,
       },
+      201
+    ); // 201 Created
+  } catch (error) {
+    console.error("Error in POST /favorite:", error);
+
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    if (errorMessage.includes("認証")) {
+      return c.json({ error: errorMessage }, 401);
+    }
+
+    if (
+      errorMessage.includes("有効な") ||
+      errorMessage.includes("指定されていません")
+    ) {
+      return c.json({ error: errorMessage }, 400);
+    }
+
+    if (errorMessage.includes("既に")) {
+      return c.json({ message: errorMessage }, 200);
+    }
+
+    return c.json(
+      { error: "サーバーエラーが発生しました", details: errorMessage },
       500
     );
   }
+});
 
-  // 4. 成功レスポンスを返す
-  return c.json({
-    message: "お気に入りを登録しました",
-    user_id: user.id,
-    favorite_id: favoriteId,
-    pokemon_id: pokemonId,
-  });
+/**
+ * お気に入りから削除するエンドポイント（新規追加）
+ */
+app.delete("/:id", async (c) => {
+  try {
+    const supabase = createSupabaseClient(c.env);
+    const user = await getUserFromToken(
+      supabase,
+      c.req.header("Authorization")
+    );
+
+    const pokemonId = Number.parseInt(c.req.param("id"), 10);
+    if (Number.isNaN(pokemonId) || pokemonId <= 0) {
+      throw new Error("有効なPokemon IDが指定されていません");
+    }
+
+    // 1. favoriteテーブルからpokemon_idに一致するレコードを検索
+    const { data: favorite, error: favoriteError } = await supabase
+      .from("favorite")
+      .select("id")
+      .eq("pokemon_id", pokemonId)
+      .maybeSingle();
+
+    if (favoriteError) {
+      throw new Error(
+        `favoriteの検索中にエラーが発生しました: ${favoriteError.message}`
+      );
+    }
+
+    if (!favorite) {
+      return c.json(
+        { message: "指定されたポケモンはお気に入りに登録されていません" },
+        404
+      );
+    }
+
+    // 2. user_favoriteから該当するレコードを削除
+    const { error: deleteError } = await supabase
+      .from("user_favorite")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("favorite_id", favorite.id);
+
+    if (deleteError) {
+      throw new Error(
+        `お気に入りの削除中にエラーが発生しました: ${deleteError.message}`
+      );
+    }
+
+    return c.json(
+      {
+        message: "お気に入りから削除しました",
+        pokemon_id: pokemonId,
+      },
+      200
+    );
+  } catch (error) {
+    console.error("Error in DELETE /favorite/:id:", error);
+
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    if (errorMessage.includes("認証")) {
+      return c.json({ error: errorMessage }, 401);
+    }
+    if (
+      errorMessage.includes("有効な") ||
+      errorMessage.includes("指定されていません")
+    ) {
+      return c.json({ error: errorMessage }, 400);
+    }
+
+    return c.json(
+      { error: "サーバーエラーが発生しました", details: errorMessage },
+      500
+    );
+  }
 });
 
 export default app;
